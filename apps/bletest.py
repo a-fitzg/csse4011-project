@@ -1,0 +1,26 @@
+import asyncio
+from bleak import BleakScanner
+from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
+import logging
+
+logging.basicConfig()
+
+
+def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
+    if device.address == "CF:95:D7:62:5F:4D":
+        print(device.address, "RSSI:", device.rssi, advertisement_data)
+
+
+async def run():
+    scanner = BleakScanner()
+    scanner.register_detection_callback(simple_callback)
+
+    while True:
+        await scanner.start()
+        await asyncio.sleep(5.0)
+        await scanner.stop()
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(run())
