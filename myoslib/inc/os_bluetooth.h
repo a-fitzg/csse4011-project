@@ -36,11 +36,13 @@
 #define FLAGS   DT_GPIO_FLAGS(LED2_NODE, gpios)
 #else
 // A build error here means board isn't set up to blink an LED.
+#ifdef FAIL_CATASTROPHICALLY
 #error "Unsupported board: led2 devicetree alias is not defined"
+#endif // FAIL_CATASTROPHICALLY
 #define LED2    ""
 #define PIN 0
 #define FLAGS   0
-#endif
+#endif //DT_NODE_HAS_STATUS
 
 
 // Properties of a static node

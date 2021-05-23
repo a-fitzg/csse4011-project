@@ -1,0 +1,27 @@
+&spi1 {
+    pinctrl-0 = <&spi1_sck_pa5 &spi1_miso_pa6 &spi1_mosi_pa7>;
+    status = "okay";
+    cs-gpios = <&gpioa 15 GPIO_ACTIVE_LOW>;
+};
+
+/{   
+	model = "STMMicroelectronics B-L475E-IOTAx board";
+	compatible = "st,stm32321475-disco-iot";
+
+	gpio-keys{
+		compatible = "gpio-keys";
+		user_pin_pa4: PA_4 {
+			label  = "User PA_4";
+			gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
+		};
+		user_pin_pb2: PB_2 {
+			label = "User PB_2";
+			gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+		}; 
+	};
+
+	aliases {
+		echo = &user_pin_pa4;
+		trigger = &user_pin_pb2;
+	};
+};

@@ -33,7 +33,20 @@
 
 // The devicetree node identifier for the "led2" alias.                      
 #define LED2_NODE DT_ALIAS(led2)                                                
-                                                                                
+
+
+#if DT_NODE_HAS_STATUS(LED2_NODE, okay)
+#define LED2    DT_GPIO_LABEL(LED2_NODE, gpios)
+#define PIN DT_GPIO_PIN(LED2_NODE, gpios)
+#define FLAGS   DT_GPIO_FLAGS(LED2_NODE, gpios)
+#else
+// A build error here means board isn't set up to blink an L    ED.
+#error "Unsupported board: led2 devicetree alias is not defi    ned"
+#define LED2    ""
+#define PIN 0
+#define FLAGS   0
+#endif
+
 
 LOG_MODULE_REGISTER(main);
 

@@ -284,8 +284,8 @@ void bt_mobileCallback(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 
             k_msgq_purge(&os_QueueBtNodeMessage);
         }
-///*
-        if (rssi > -30) {
+
+        if (rssi > -60) {
 
             // Social distancing alert!
             violatingDistance = true;
@@ -293,7 +293,7 @@ void bt_mobileCallback(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 
             violatingDistance = false;
         }
-//*/
+
     }
 
     // Listen for messages from node 8
@@ -321,7 +321,7 @@ void bt_mobileCallback(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
             k_msgq_purge(&os_QueueBtNodeMessage);
         }
 
-        if (rssi > -30) {
+        if (rssi > -60) {
 
             // Social distancing alert!
             violatingDistance = true;
