@@ -65,27 +65,7 @@
 const struct device *trig;
 const struct device *ech;
 
-
-/*
- * Set Advertisement data. Based on the Eddystone specification:
- * https://github.com/google/eddystone/blob/master/protocol-specification.md
- * https://github.com/google/eddystone/tree/master/eddystone-url
- */
-static const struct bt_data ad[] = {
-    // 02 01 04 03 03
-	BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_NO_BREDR),
-    // aa fe 10 16
-	BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0xaa, 0xfe),
-    // aa fe 10 00 00 [wikipedia.org]
-	BT_DATA_BYTES(BT_DATA_SVC_DATA16,
-		      0xaa, 0xfe, /* Eddystone UUID */
-		      0x10, /* Eddystone-URL frame type */
-		      0x00, /* Calibrated Tx power at 0m */
-		      0x00, /* URL Scheme Prefix http://www. */
-		      'w', 'i', 'k', 'i', 'p', 'e', 'd', 'i', 'a',
-		      0x08) /* .org */
-};
-
+// Initial advertising structure, will be overriden in cyclic executive
 static const struct bt_data new_ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
     BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0xAA, 0xFE),
@@ -167,7 +147,6 @@ void main(void)
     k_usleep(5);
 #endif // ULTRASONIC_ID
 
-    uint8_t iter = 0;
     while (1) {
 
 #ifdef ULTRASONIC_ID
@@ -214,7 +193,6 @@ void main(void)
         err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, temp_ad, 
                 ARRAY_SIZE(temp_ad), sd, ARRAY_SIZE(sd));
 #endif  // ULTRASONIC_ID
-        //iter++;
         k_sleep(K_MSEC(30));
     }
 }

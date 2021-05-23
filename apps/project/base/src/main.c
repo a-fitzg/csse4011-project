@@ -31,7 +31,7 @@
 
 // Bluetooth address of mobile node
 bt_addr_t mobileAddrPrimary = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}};
-bt_addr_t mobileAddrSecondary = {.val = {0xB7, 0x14, 0x80, 0xB8, 0xB9, 0xEF}};
+//bt_addr_t mobileAddrSecondary = {.val = {0xB7, 0x14, 0x80, 0xB8, 0xB9, 0xEF}};
 
 /**
  * @brief   Callback for bluetooth scan
@@ -46,26 +46,22 @@ static void staticCallback(const bt_addr_le_t* addr, int8_t rssi,
     if (addressesEqual(addr->a, mobileAddrPrimary)) {
 
         // We have a message from our mobile node...
-        uint8_t payload[PAYLOAD_SIZE];
+        int8_t payload[PAYLOAD_SIZE];
         for (uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
 
             payload[i] = buf->data[i + PAYLOAD_BUFFER_OFFSET];
         }
 
-        int8_t rssiList[] = {payload[0], payload[1], payload[2], payload[3], 
-                             payload[4], payload[5], payload[6], payload[7]};
-
         // Make a message with the packet information, then send it over UART
         char message[80];
-        sprintf(message, "%i,%i,%i,%i,%i,%i,%i,%i,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
-                rssiList[4],  rssiList[5],  rssiList[6],  rssiList[7], 
-                rssiList[0],  rssiList[1],  rssiList[2],  rssiList[3],
+        sprintf(message, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
+                payload[0],   payload[1],   payload[2],   payload[3], 
+                payload[4],   payload[5],   payload[6],   payload[7],
                 payload[8],   payload[9],   payload[10],  payload[11],
-                payload[12],  payload[13],  payload[14],  payload[15],
-                0);
+                payload[12],  payload[13],  payload[14],  0x00);
         printf("%s", message);
     }
-
+/*
     if (addressesEqual(addr->a, mobileAddrSecondary)) {
 
         // We have a message from the other mobile node...
@@ -88,6 +84,7 @@ static void staticCallback(const bt_addr_le_t* addr, int8_t rssi,
         printf("%s", message);
 
     }
+*/
 
 }
 

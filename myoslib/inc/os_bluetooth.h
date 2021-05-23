@@ -8,7 +8,7 @@
 #define DEVICE_NAME             CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN         (sizeof(DEVICE_NAME) - 1)
 
-#define NUM_STATIC_NODES        8
+#define NUM_STATIC_NODES        13
 #define PAYLOAD_SIZE            16
 #define PAYLOAD_BUFFER_OFFSET   13
 #define NODE_QUEUE_ALIGNMENT    32
@@ -50,7 +50,7 @@ typedef struct {
     bt_addr_t   address;
     uint8_t     hasUltrasonic;
     int8_t      rssi;
-    uint8_t     ultrasonic[2];
+    uint8_t     ultrasonic;
 } StaticNode;
 
 // Static node list item, each with an index and node properties

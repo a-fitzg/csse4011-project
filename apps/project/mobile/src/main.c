@@ -101,31 +101,59 @@ void main(void) {
     k_mutex_init(&os_MutexNodeList);
 
     // Initialise known bluetooth static nodes
+    // Xander's disco
     NodeListItem node1 = {.index = 0, .node = 
-            {.address = {.val = {0x80, 0x17, 0xF3, 0x5A, 0x73, 0xD8}}, 
-            .hasUltrasonic = 1, .rssi = -128, .ultrasonic = {0, 0}}};
+            {.address = {.val = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}, 
+            .hasUltrasonic = 1, .rssi = -128, .ultrasonic = 0}};
+    // Desmond's disco
     NodeListItem node2 = {.index = 1, .node = 
-            {.address = {.val = {0x78, 0x8B, 0x23, 0xD3, 0x34, 0xF0}}, 
-            .hasUltrasonic = 1, .rssi = -128, .ultrasonic = {0, 0}}};
+            {.address = {.val = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}, 
+            .hasUltrasonic = 1, .rssi = -128, .ultrasonic = 0}};
+    // Static 3 dongle
     NodeListItem node3 = {.index = 2, .node = 
-            {.address = {.val = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}, 
-            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = {0, 0}}};
-    NodeListItem node4 = {.index = 3, .node = 
             {.address = {.val = {0x8A, 0x14, 0x8F, 0x07, 0xFA, 0xF7}}, 
-            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = {0, 0}}};
-    //-------------------------------------------------------------------------
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Static 0
+    NodeListItem node4 = {.index = 3, .node = 
+            {.address = {.val = {0x80, 0x17, 0xF3, 0x5A, 0x73, 0xD8}},
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Static 1
     NodeListItem node5 = {.index = 4, .node = 
-            {.address = {.val = {0x68, 0x70, 0x89, 0x63, 0xB1, 0xF4}}, 
-            .hasUltrasonic = 1, .rssi = -128, .ultrasonic = {0, 0}}};
+            {.address = {.val = {0x78, 0x8B, 0x23, 0xD3, 0x34, 0xF0}},
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Aiden Argon
     NodeListItem node6 = {.index = 5, .node = 
-            {.address = {.val = {0x7D, 0x91, 0x65, 0xB7, 0x03, 0xEC}}, 
-            .hasUltrasonic = 1, .rssi = -128, .ultrasonic = {0, 0}}};
+            {.address = {.val = {0x68, 0x70, 0x89, 0x63, 0xB1, 0xF4}}, 
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // ------------------------  BEACONS  ----------------------------
+    // Beacon 2
     NodeListItem node7 = {.index = 6, .node = 
-            {.address = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}}, 
-            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = {0, 0}}};
+            {.address = {.val = {0xFE, 0xFF, 0x82, 0x89, 0x1B, 0xCB}}, 
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Beacon 3
     NodeListItem node8 = {.index = 7, .node = 
-            {.address = {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}}, 
-            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = {0, 0}}};
+            {.address = {.val = {0x60, 0xCE, 0xDB, 0xE0, 0x0C, 0xCA}}, 
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Beacon 4
+    NodeListItem node9 = {.index = 8, .node = 
+            {.address = {.val = {0x4A, 0x3E, 0xFA, 0x8D, 0xE0, 0xFD}}, 
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Beacon 5
+    NodeListItem node10 = {.index = 9, .node = 
+            {.address = {.val = {0x04, 0x25, 0xFF, 0x57, 0xBD, 0xF9}}, 
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Beacon 6
+    NodeListItem node11 = {.index = 10, .node = 
+            {.address = {.val = {0x58, 0xC4, 0x30, 0xDA, 0xEB, 0xEC}}, 
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Beacon 7
+    NodeListItem node12 = {.index = 11, .node = 
+            {.address = {.val = {0x13, 0x20, 0x7C, 0xD4, 0x7F, 0xD4}}, 
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
+    // Beacon 8
+    NodeListItem node13 = {.index = 12, .node = 
+            {.address = {.val = {0x0A, 0x80, 0x5C, 0xBA, 0x59, 0xE6}}, 
+            .hasUltrasonic = 0, .rssi = -128, .ultrasonic = 0}};
 
     nodeList[0] = node1;
     nodeList[1] = node2;
@@ -135,6 +163,11 @@ void main(void) {
     nodeList[5] = node6;
     nodeList[6] = node7;
     nodeList[7] = node8;
+    nodeList[8] = node9;
+    nodeList[9] = node10;
+    nodeList[10] = node11;
+    nodeList[11] = node12;
+    nodeList[12] = node13;
 
     k_sleep(K_MSEC(1000));
 
@@ -157,51 +190,37 @@ void main(void) {
     while (1) {
 
         // RSSI values
-        int8_t rssi0, rssi1, rssi2, rssi3, rssi4, rssi5, rssi6, rssi7;
+        int8_t rssi0, rssi1, rssi2, rssi3, rssi4, rssi5, rssi6, rssi7, rssi8, 
+               rssi9, rssi10, rssi11, rssi12;
         // Ultrasonic values
-        uint8_t us0[2];
-        uint8_t us1[2];
-        uint8_t us2[2];
-        uint8_t us3[2];
+        uint8_t us0;
+        uint8_t us1;
 
         // Now get the values
         // Accessing variable shared across multiple threads, need to ensure
         // only 1 thread access the variables at once
         k_mutex_lock(&os_MutexNodeList, K_FOREVER);
 
-        rssi0 = nodeList[0].node.rssi;
-        rssi1 = nodeList[1].node.rssi;
-        rssi2 = nodeList[2].node.rssi;
-        rssi3 = nodeList[3].node.rssi;
-        rssi4 = nodeList[4].node.rssi;
-        rssi5 = nodeList[5].node.rssi;
-        rssi6 = nodeList[6].node.rssi;
-        rssi7 = nodeList[7].node.rssi;
+        rssi0  = nodeList[0].node.rssi;
+        rssi1  = nodeList[1].node.rssi;
+        rssi2  = nodeList[2].node.rssi;
+        rssi3  = nodeList[3].node.rssi;
+        rssi4  = nodeList[4].node.rssi;
+        rssi5  = nodeList[5].node.rssi;
+        rssi6  = nodeList[6].node.rssi;
+        rssi7  = nodeList[7].node.rssi;
+        rssi8  = nodeList[8].node.rssi;
+        rssi9  = nodeList[9].node.rssi;
+        rssi10 = nodeList[10].node.rssi;
+        rssi11 = nodeList[11].node.rssi;
+        rssi12 = nodeList[12].node.rssi;
 
-        // Define node list items 0 and 1 ultrasonic nodes (in group 1)
-        // Define node list items 4 and 5 ultrasonic nodes (in group 2)
-        us0[0] = nodeList[0].node.ultrasonic[0];
-        us0[1] = nodeList[0].node.ultrasonic[1];
-        us1[0] = nodeList[1].node.ultrasonic[0];
-        us1[1] = nodeList[1].node.ultrasonic[1];
-        us2[0] = nodeList[4].node.ultrasonic[0];
-        us2[1] = nodeList[4].node.ultrasonic[1];
-        us3[0] = nodeList[5].node.ultrasonic[0];
-        us3[1] = nodeList[5].node.ultrasonic[1];
-
-        // Get current uptime
-        uint32_t uptime = (uint32_t)k_uptime_get();
+        // Define node list items 0 and 1 ultrasonic node
+        us0 = nodeList[0].node.ultrasonic;
+        us1 = nodeList[1].node.ultrasonic;
 
         // Leaving critical section
         k_mutex_unlock(&os_MutexNodeList);
-
-        // Union to convert time into individual bytes (to send over bluetooth)
-        union {
-            uint32_t        time;
-            unsigned char   bytes[4];
-        } timeConverter ;
-        
-        timeConverter.time = uptime;
 
         // Now we have the necessary values, send them off to the base node
         btErr = bt_le_adv_stop();
@@ -215,10 +234,10 @@ void main(void) {
                         0x00,           // Calibrated Tx power at 0m
                         rssi0,  rssi1,  rssi2,  rssi3, 
                         rssi4,  rssi5,  rssi6,  rssi7,
-                        us0[0], us0[1], us1[0], us1[1], 
-                        us2[0], us2[1], 
-                        us3[0], us3[1],
-                        0x00, 0x00)
+                        rssi8,  rssi9,  rssi10, rssi11,
+                        rssi12, us0,
+                        us1,    0x00,
+                        0x00,   0x00)
         };
 
 #ifdef DEBUG_PRINT

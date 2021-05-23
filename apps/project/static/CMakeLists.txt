@@ -7,4 +7,4 @@ project(beacon)
 include_directories(../../../myoslib/inc)                                          
 target_sources(app PRIVATE src/main.c ../../../myoslib/src/os_bluetooth.c)
 
-target_compile_definitions(app PUBLIC ULTRASONIC_ID=2)
+#target_compile_definitions(app PUBLIC ULTRASONIC_ID=2)
