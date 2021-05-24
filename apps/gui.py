@@ -25,6 +25,7 @@ from openpyxl import load_workbook
 import scipy.optimize as opt
 from sklearn.neighbors import KNeighborsClassifier 
 from pykalman import KalmanFilter
+from scipy.optimize import minimize
 
 mobile1_R = None
 mobile1_U = None
@@ -69,32 +70,35 @@ def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
         mobile3_R = rssi_list
         mobile3_U = us_list
 
-class RSSI(QThread):
-    signal  = pyqtSignal('PyQt_PyObject')
+def get_trainingmodel():
+        # ITERATE_X = 8
+        # ITERATE_Y = 10
+        X_train = []
+        Y_train = []
+        # temp_x = []
+        # temp_y = []
+        # count = 0
+        # ds = []
+        # wb = load_workbook(filename=r'C:\Users\desmo\csse4011\csse4011-p3\TrainingData.xlsx')
+        # sheet = wb.active
+        # for r in sheet.iter_rows(min_row=1,max_row=4500,min_col=1,max_col=2,values_only=True):
+        #     X_train = [int(s) for s in r[0].split(',')]
+        #     Y_train = [int(s) for s in r[1].split(',')]
+        wb = load_workbook(filename=r'C:\Users\desmo\csse4011\csse4011-project\apps\trainingset.xlsx')
+        sheet = wb.active
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, parent = None):
-        super(RSSI, self).__init__(parent)
-        self.loop = loop
+        for r in sheet.iter_rows(min_row=1,max_row=37600,min_col=1,max_col=3,values_only=True):
+            temp = []
+            r_n = [int(s) for s in r[0].split('?')]
+            temp = [int(r[1].strip('|')), int(r[2].strip('|'))]
+            Y_train.append(temp)
+            X_train.append(r_n)
+        model = KNeighborsClassifier(n_neighbors=5)
+        model.fit(X_train,Y_train)
     
-    async def run(self):
-        scanner = BleakScanner()
-        scanner.register_detection_callback(simple_callback)     
+        return model
 
-        while True:
-            await scanner.start()
-            await asyncio.sleep(0.1)
-            await scanner.stop()
-
-    def work(self):
-        asyncio.ensure_future(self.run(), loop=self.loop)
-
-class Worker(QThread):
-    signal = pyqtSignal('PyQt_PyObject')
-
-    def __init__(self):
-        QThread.__init__(self)
-    
-    def Kalman(self, raw_data):
+def Kalman(raw_data):
         kf = KalmanFilter(initial_state_mean=[0,0], n_dim_obs=2)
         measurements = np.asarray(raw_data)  # 2 observations
         initial_state_mean = [measurements[0, 0],
@@ -124,29 +128,65 @@ class Worker(QThread):
         mean_y = (sum(y)) / len(y)
         return [mean_x, mean_y]
 
-    def get_trainingmodel(self):
-        ITERATE_X = 8
-        ITERATE_Y = 10
-        X_train = []
-        Y_train = []
-        temp_x = []
-        temp_y = []
-        count = 0
-        ds = []
-        wb = load_workbook(filename=r'C:\Users\desmo\csse4011\csse4011-p3\TrainingData.xlsx')
-        sheet = wb.active
-        for r in sheet.iter_rows(min_row=1,max_row=4500,min_col=1,max_col=2,values_only=True):
-            X_train = [int(s) for s in r[0].split(',')]
-            Y_train = [int(s) for s in r[1].split(',')]
-        model = KNeighborsClassifier(n_neighbors=5)
-        model.fit(X_train,Y_train)
+class RSSI(QThread):
+    signal  = pyqtSignal('PyQt_PyObject')
+
+    def __init__(self, loop: asyncio.AbstractEventLoop, parent = None):
+        super(RSSI, self).__init__(parent)
+        self.loop = loop
     
-        return model
+    async def run(self):
+        scanner = BleakScanner()
+        scanner.register_detection_callback(simple_callback)     
+
+        while True:
+            await scanner.start()
+            await asyncio.sleep(0.1)
+            await scanner.stop()
+
+    def work(self):
+        asyncio.ensure_future(self.run(), loop=self.loop)
+
+class Worker(QThread):
+    signal = pyqtSignal('PyQt_PyObject')
+
+    def __init__(self):
+        QThread.__init__(self)
+
+    def rssi_dist_convert(self, rssi, ntype):
+        if (ntype == 1): ## board static beacon
+            dist = 10 ** ((-58 - rssi) / 30)  
+            return dist
+        elif (ntype == 2): ## ibeacon
+            dist = 10 ** ((-72 - rssi) / 20) 
+
+    def gps_solve(self, distances_to_station, stations_coordinates):
+        def error(x, c, r):
+            return sum([(np.linalg.norm(x - c[i]) - r[i]) ** 2 for i in range(len(c))])
+
+        l = len(stations_coordinates)
+        S = sum(distances_to_station)
+        # compute weight vector for initial guess
+        W = [((l - 1) * S) / (S - w) for w in distances_to_station]
+        # get initial guess of point location
+        x0 = sum([W[i] * stations_coordinates[i] for i in range(l)])
+        # optimize distance from signal origin to border of spheres
+        return minimize(error, x0, args=(stations_coordinates, distances_to_station), method='Nelder-Mead').x
+
+    
 
     def run(self):
-        # modal = get_trainingmodel()
+        model = get_trainingmodel()
         while True:
-            print(mobile1_R)
+            ## feed rssi to modal
+            predicted_m1 = model.predict([mobile1_R])
+            print(predicted_m1)
+            ## get distance from rssi value
+            ## multilateration
+            ## kalman filter
+            ## pass value to gui
+            ##  
+            ## upl to dashboard
             time.sleep(1)
 
 class Ui_MainWindow(object):
