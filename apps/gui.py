@@ -71,19 +71,8 @@ def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
         mobile3_U = us_list
 
 def get_trainingmodel():
-        # ITERATE_X = 8
-        # ITERATE_Y = 10
         X_train = []
         Y_train = []
-        # temp_x = []
-        # temp_y = []
-        # count = 0
-        # ds = []
-        # wb = load_workbook(filename=r'C:\Users\desmo\csse4011\csse4011-p3\TrainingData.xlsx')
-        # sheet = wb.active
-        # for r in sheet.iter_rows(min_row=1,max_row=4500,min_col=1,max_col=2,values_only=True):
-        #     X_train = [int(s) for s in r[0].split(',')]
-        #     Y_train = [int(s) for s in r[1].split(',')]
         wb = load_workbook(filename=r'C:\Users\desmo\csse4011\csse4011-project\apps\trainingset.xlsx')
         sheet = wb.active
 
@@ -128,6 +117,27 @@ def Kalman(raw_data):
         mean_y = (sum(y)) / len(y)
         return [mean_x, mean_y]
 
+def rssi_dist_convert(rssi, ntype):
+        if (ntype == 1): ## board static beacon
+            dist = 10 ** ((-58 - rssi) / 30)  
+            return dist
+        elif (ntype == 2): ## ibeacon
+            dist = 10 ** ((-72 - rssi) / 20) 
+
+def gps_solve(distances_to_station, stations_coordinates):
+    def error(x, c, r):
+        return sum([(np.linalg.norm(x - c[i]) - r[i]) ** 2 for i in range(len(c))])
+
+    l = len(stations_coordinates)
+    S = sum(distances_to_station)
+    # compute weight vector for initial guess
+    W = [((l - 1) * S) / (S - w) for w in distances_to_station]
+    # get initial guess of point location
+    x0 = sum([W[i] * stations_coordinates[i] for i in range(l)])
+    # optimize distance from signal origin to border of spheres
+    return minimize(error, x0, args=(stations_coordinates, distances_to_station), method='Nelder-Mead').x
+
+
 class RSSI(QThread):
     signal  = pyqtSignal('PyQt_PyObject')
 
@@ -152,28 +162,6 @@ class Worker(QThread):
 
     def __init__(self):
         QThread.__init__(self)
-
-    def rssi_dist_convert(self, rssi, ntype):
-        if (ntype == 1): ## board static beacon
-            dist = 10 ** ((-58 - rssi) / 30)  
-            return dist
-        elif (ntype == 2): ## ibeacon
-            dist = 10 ** ((-72 - rssi) / 20) 
-
-    def gps_solve(self, distances_to_station, stations_coordinates):
-        def error(x, c, r):
-            return sum([(np.linalg.norm(x - c[i]) - r[i]) ** 2 for i in range(len(c))])
-
-        l = len(stations_coordinates)
-        S = sum(distances_to_station)
-        # compute weight vector for initial guess
-        W = [((l - 1) * S) / (S - w) for w in distances_to_station]
-        # get initial guess of point location
-        x0 = sum([W[i] * stations_coordinates[i] for i in range(l)])
-        # optimize distance from signal origin to border of spheres
-        return minimize(error, x0, args=(stations_coordinates, distances_to_station), method='Nelder-Mead').x
-
-    
 
     def run(self):
         model = get_trainingmodel()
