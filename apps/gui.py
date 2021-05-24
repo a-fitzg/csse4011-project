@@ -28,6 +28,7 @@ import scipy.optimize as opt
 from sklearn.neighbors import KNeighborsClassifier 
 from pykalman import KalmanFilter
 from scipy.optimize import minimize
+from datetime import datetime
 
 mobile1_R = None
 mobile1_U = None
@@ -86,7 +87,7 @@ def get_trainingmodel():
             X_train.append(r_n)
         model = KNeighborsClassifier(n_neighbors=5)
         model.fit(X_train,Y_train)
-    
+
         return model
 
 def Kalman(raw_data):
@@ -168,17 +169,22 @@ class Worker(QThread):
     def run(self):
         model = get_trainingmodel()
         stations = list(np.array([[17.8,7.8], [2.4,7.8], [5.85,3.0], [11.95,0.1],[6.55,0.1],[12.75,3.0],[9.45,12.75],[14.2,10],[5.5,10],[12.55,9.2],[8.65,9.2],[15.05,4.8],[6.95,4.8]]))
+        time = datetime.now()
+        timestamp = datetime.timestamp(time)
         while True:
             ## feed rssi to modal
-            knn1 = model.predict([mobile1_R])
-            knn2 = model.predict([mobile2_R])
-            knn3 = model.predict([mobile3_R])
+            m1  = mobile1_R
+            m2  = mobile2_R
+            m3  = mobile3_R
+            knn1 = model.predict([m1])
+            knn2 = model.predict([m2])
+            knn3 = model.predict([m3])
             ## get distance from rssi value
-            min_list1 = sorted(zip(stations,mobile1_R), key=lambda t: t[1])[7:]
+            min_list1 = sorted(zip(stations,m1), key=lambda t: t[1])[7:]
             dist1 = [rssi_dist_convert(i[1],0) for i in min_list1]
-            min_list2 = sorted(zip(stations,mobile2_R), key=lambda t: t[1])[7:]
+            min_list2 = sorted(zip(stations,m2), key=lambda t: t[1])[7:]
             dist2 = [rssi_dist_convert(i[1],0) for i in min_list2]
-            min_list3 = sorted(zip(stations,mobile3_R), key=lambda t: t[1])[7:]
+            min_list3 = sorted(zip(stations,m3), key=lambda t: t[1])[7:]
             dist3 = [rssi_dist_convert(i[1],0) for i in min_list3]
             ## multilateration
             multi1 = gps_solve(dist1, stations)
@@ -200,7 +206,10 @@ class Worker(QThread):
             self.signal.emit(loc)
             ##  
             ## upl to dashboard
-            time.sleep(1)
+            if (time - datetime.timestamp(datetime.now()) > 60):
+                ## uplaod loc to dashboard
+                pass
+            time.sleep(0.2)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
