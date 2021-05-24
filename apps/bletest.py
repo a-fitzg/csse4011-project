@@ -18,7 +18,6 @@ def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
         us_list.extend(node_values[15:17])
         print("RSSI: ", rssi_list, ",  US: ", us_list)
 
-
 async def run():
     scanner = BleakScanner()
     scanner.register_detection_callback(simple_callback)
