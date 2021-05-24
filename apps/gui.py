@@ -26,39 +26,48 @@ import scipy.optimize as opt
 from sklearn.neighbors import KNeighborsClassifier 
 from pykalman import KalmanFilter
 
-mobile1 = None
-mobile2 = None
-mobile3 = None
+mobile1_R = None
+mobile1_U = None
+mobile2_R = None
+mobile2_U = None
+mobile3_R = None
+mobile3_U = None
 
 def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
     
     if device.address == "E1:38:D4:CD:DE:AF" and advertisement_data.service_data:
-        global mobile1
+        global mobile1_R
+        global mobile1_U
         rssi_list = []
         us_list = []
         adv_bytearray = list(advertisement_data.service_data.values())[0]
         node_values = [ctypes.c_int8(adv_bytearray[i]).value for i in range(len(adv_bytearray))]
         rssi_list.extend(node_values[2:15])
         us_list.extend(node_values[15:17])
-        mobile1 = rssi_list + us_list
+        mobile1_R = rssi_list
+        mobile1_U = us_list
     if device.address == "CF:95:D7:62:5F:4D" and advertisement_data.service_data:
-        global mobile2
+        global mobile2_R
+        global mobile2_U
         rssi_list = []
         us_list = []
         adv_bytearray = list(advertisement_data.service_data.values())[0]
         node_values = [ctypes.c_int8(adv_bytearray[i]).value for i in range(len(adv_bytearray))]
         rssi_list.extend(node_values[2:15])
         us_list.extend(node_values[15:17])
-        mobile2 = rssi_list + us_list
+        mobile2_R = rssi_list
+        mobile2_U = us_list
     if device.address == "" and advertisement_data.service_data:
-        global mobile3
+        global mobile3_R
+        global mobile3_U
         rssi_list = []
         us_list = []
         adv_bytearray = list(advertisement_data.service_data.values())[0]
         node_values = [ctypes.c_int8(adv_bytearray[i]).value for i in range(len(adv_bytearray))]
         rssi_list.extend(node_values[2:15])
         us_list.extend(node_values[15:17])
-        mobile3 = rssi_list + us_list
+        mobile3_R = rssi_list
+        mobile3_U = us_list
 
 class RSSI(QThread):
     signal  = pyqtSignal('PyQt_PyObject')
@@ -66,7 +75,6 @@ class RSSI(QThread):
     def __init__(self, loop: asyncio.AbstractEventLoop, parent = None):
         super(RSSI, self).__init__(parent)
         self.loop = loop
-        self.value = None
     
     async def run(self):
         scanner = BleakScanner()
@@ -85,9 +93,8 @@ class Worker(QThread):
 
     def __init__(self):
         QThread.__init__(self)
-        self.rssi = None
     
-    def Kalman(raw_data):
+    def Kalman(self, raw_data):
         kf = KalmanFilter(initial_state_mean=[0,0], n_dim_obs=2)
         measurements = np.asarray(raw_data)  # 2 observations
         initial_state_mean = [measurements[0, 0],
@@ -131,37 +138,15 @@ class Worker(QThread):
         for r in sheet.iter_rows(min_row=1,max_row=4500,min_col=1,max_col=2,values_only=True):
             X_train = [int(s) for s in r[0].split(',')]
             Y_train = [int(s) for s in r[1].split(',')]
-
-        # for x in r_n:
-        #     if count < ITERATE_X:
-        #         temp_x.append(x)
-        #         count += 1
-        #     elif count >= ITERATE_X and count < ITERATE_Y:
-        #         temp_y.append(x)
-        #         count += 1
-        #     else:
-        #         X_train.append(temp_x)
-        #         Y_train.append(temp_y)
-        #         temp_x = []
-        #         temp_y = []
-        #         temp_x.append(x)
-        #         count = 1
         model = KNeighborsClassifier(n_neighbors=5)
         model.fit(X_train,Y_train)
     
         return model
 
     def run(self):
-        # run data collect and processes here
-        # num_list = [[[1,2,3],[2,3,5]],[[2,2,4],[1,2,4]]]
-        # for loc in num_list:
-        #     self.signal.emit(loc)
-        #     time.sleep(2)
-        # pass
-
-        modal = get_trainingmodel()
+        # modal = get_trainingmodel()
         while True:
-            
+            print(mobile1_R)
             time.sleep(1)
 
 class Ui_MainWindow(object):
@@ -201,7 +186,6 @@ class Ui_MainWindow(object):
         self.thread1 = RSSI(loop)
         self.thread = Worker()
         self.thread1.work()
-        self.thread1.signal.connect(self.thread.get_rssi)
         self.thread.start()
         self.thread.signal.connect(self.gui_update)
 
