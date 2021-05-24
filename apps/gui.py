@@ -15,6 +15,8 @@ from PyQt5.QtCore import QThread, pyqtSignal
 import time
 from pyqtgraph.graphicsItems.ScatterPlotItem import Symbols
 import asyncio
+
+from scipy.sparse import coo
 from bleak import BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -165,14 +167,37 @@ class Worker(QThread):
 
     def run(self):
         model = get_trainingmodel()
+        stations = list(np.array([[17.8,7.8], [2.4,7.8], [5.85,3.0], [11.95,0.1],[6.55,0.1],[12.75,3.0],[9.45,12.75],[14.2,10],[5.5,10],[12.55,9.2],[8.65,9.2],[15.05,4.8],[6.95,4.8]]))
         while True:
             ## feed rssi to modal
-            predicted_m1 = model.predict([mobile1_R])
-            print(predicted_m1)
+            knn1 = model.predict([mobile1_R])
+            knn2 = model.predict([mobile2_R])
+            knn3 = model.predict([mobile3_R])
             ## get distance from rssi value
+            min_list1 = sorted(zip(stations,mobile1_R), key=lambda t: t[1])[7:]
+            dist1 = [rssi_dist_convert(i[1],0) for i in min_list1]
+            min_list2 = sorted(zip(stations,mobile2_R), key=lambda t: t[1])[7:]
+            dist2 = [rssi_dist_convert(i[1],0) for i in min_list2]
+            min_list3 = sorted(zip(stations,mobile3_R), key=lambda t: t[1])[7:]
+            dist3 = [rssi_dist_convert(i[1],0) for i in min_list3]
             ## multilateration
+            multi1 = gps_solve(dist1, stations)
+            multi2 = gps_solve(dist2, stations)
+            multi3 = gps_solve(dist3, stations)
             ## kalman filter
+            temp1 = knn1 + multi1
+            temp2 = knn2 + multi3
+            temp3 = knn3 + multi3
+            loc1 = Kalman(temp1)
+            loc2 = Kalman(temp2)
+            loc3 = Kalman(temp3)
             ## pass value to gui
+            temp=[]
+            temp.append(loc1)
+            temp.append(loc2)
+            temp.append(loc3)
+            loc = [[int(i[0]) for i in temp],[int(i[1]) for i in temp]]
+            self.signal.emit(loc)
             ##  
             ## upl to dashboard
             time.sleep(1)
@@ -231,9 +256,42 @@ class Ui_MainWindow(object):
             size=10, brush=[pg.mkBrush(c) for c in "rgb"])
         self.graphicsView.clear()
         self.graphicsView.addItem(scatter)
-        self.graphicsView.setXRange(0,8, padding=0)
-        self.graphicsView.setYRange(0,8, padding=0)
-
+        self.graphicsView.setXRange(0,18, padding=0)
+        self.graphicsView.setYRange(0,12, padding=0)
+        coordinates = [[int(i[0]) for i in result],[int(i[1]) for i in result],[int(i[2]) for i in result]]
+        ## Room display
+        count = 0
+        while count < 3:
+            if coordinates[0] > 3 and coordinates[0] < 7 and coordinates[1] > 9 and coordinates[1] < 11:
+                if count == 0:
+                    self.label1.selectedText('Room1')
+                elif count == 1:
+                    self.label2.selectedText('Room1')
+                elif count == 2:
+                    self.label3.selectedText('Room1')  
+            elif coordinates[0] > 13 and coordinates[0] < 18.4 and coordinates[1] > 7.6 and coordinates[1] < 11:
+                if count == 0:
+                    self.label1.selectedText('Room2')
+                elif count == 1:
+                    self.label2.selectedText('Room2')
+                elif count == 2:
+                    self.label3.selectedText('Room2')
+            elif coordinates[1] > 11:
+                if count == 0:
+                    self.label1.selectedText('Corridor')
+                elif count == 1:
+                    self.label2.selectedText('Corridor')
+                elif count == 2:
+                    self.label3.selectedText('Corridor')
+            else:
+                if count == 0:
+                    self.label1.selectedText('Open space')
+                elif count == 1:
+                    self.label2.selectedText('Open space')
+                elif count == 2:
+                    self.label3.selectedText('Open space')
+            count += 1     
+                    
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
