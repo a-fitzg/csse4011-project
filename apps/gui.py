@@ -62,7 +62,7 @@ def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
         us_list.extend(node_values[15:17])
         mobile2_R = rssi_list
         mobile2_U = us_list
-    if device.address == "" and advertisement_data.service_data:
+    if device.address == "DC:6C:AA:64:DA:1A" and advertisement_data.service_data:
         global mobile3_R
         global mobile3_U
         rssi_list = []
@@ -88,7 +88,6 @@ def get_trainingmodel():
             X_train.append(r_n)
         model = KNeighborsClassifier(n_neighbors=5)
         model.fit(X_train,Y_train)
-
         return model
 
 def Kalman(raw_data):
@@ -108,7 +107,7 @@ def Kalman(raw_data):
         kf1 = KalmanFilter(transition_matrices = transition_matrix,
                         observation_matrices = observation_matrix,
                         initial_state_mean = initial_state_mean)
-        kf1 = kf1.em(measurements, n_iter=5)
+        kf1 = kf1.em(measurements, n_iter=3)
         (smoothed_state_means, smoothed_state_covariances) = kf1.smooth(measurements)
         x = smoothed_state_means[:, 0]
         y = smoothed_state_means[:, 2]
@@ -125,8 +124,9 @@ def rssi_dist_convert(rssi, ntype):
         if (ntype == 1): ## board static beacon
             dist = 10 ** ((-58 - rssi) / 30)  
             return dist
-        elif (ntype == 2): ## ibeacon
-            dist = 10 ** ((-72 - rssi) / 20) 
+        elif (ntype == 0): ## ibeacon
+            dist = 10 ** ((-72 - rssi) / 20)
+            return dist 
 
 def gps_solve(distances_to_station, stations_coordinates):
     def error(x, c, r):
@@ -170,58 +170,81 @@ class Worker(QThread):
     def run(self):
         model = get_trainingmodel()
         stations = list(np.array([[17.8,7.8], [2.4,7.8], [5.85,3.0], [11.95,0.1],[6.55,0.1],[12.75,3.0],[9.45,12.75],[14.2,10],[5.5,10],[12.55,9.2],[8.65,9.2],[15.05,4.8],[6.95,4.8]]))
-        time = datetime.now()
-        timestamp = datetime.timestamp(time)
+        time1 = datetime.now()
+        timestamp = datetime.timestamp(time1)
         MY_DEVICE_TOKEN = '3503290b-05e5-433d-a864-e1b8e7bfbf11'
         my_device = tago.Device(MY_DEVICE_TOKEN)
+        temp1 = []
+        temp2 = []
+        temp3 = []
+        count = 0
         while True:
             ## feed rssi to modal
             m1  = mobile1_R
             m2  = mobile2_R
             m3  = mobile3_R
+            # print(mobile1_R)
             knn1 = model.predict([m1])
             knn2 = model.predict([m2])
             knn3 = model.predict([m3])
             ## get distance from rssi value
             min_list1 = sorted(zip(stations,m1), key=lambda t: t[1])[7:]
             dist1 = [rssi_dist_convert(i[1],0) for i in min_list1]
+            nodes1 = [i[0] for i in min_list1]
             min_list2 = sorted(zip(stations,m2), key=lambda t: t[1])[7:]
             dist2 = [rssi_dist_convert(i[1],0) for i in min_list2]
+            nodes2 = [i[0] for i in min_list2]
             min_list3 = sorted(zip(stations,m3), key=lambda t: t[1])[7:]
             dist3 = [rssi_dist_convert(i[1],0) for i in min_list3]
+            nodes3 = [i[0] for i in min_list3]
             ## multilateration
-            multi1 = gps_solve(dist1, stations)
-            multi2 = gps_solve(dist2, stations)
-            multi3 = gps_solve(dist3, stations)
+            multi1 = gps_solve(dist1, nodes1)
+            multi2 = gps_solve(dist2, nodes2)
+            multi3 = gps_solve(dist3, nodes3)
             ## kalman filter
-            temp1 = knn1 + multi1
-            temp2 = knn2 + multi3
-            temp3 = knn3 + multi3
-            loc1 = Kalman(temp1)
-            loc2 = Kalman(temp2)
-            loc3 = Kalman(temp3)
-            ## pass value to gui
-            temp=[]
-            temp.append(loc1)
-            temp.append(loc2)
-            temp.append(loc3)
-            loc = [[int(i[0]) for i in temp],[int(i[1]) for i in temp]]
-            self.signal.emit(loc)
+            # print(knn1)
+            # print(multi1)
+            if count > 5:
+                loc1 = Kalman(temp1)
+                loc2 = Kalman(temp2)
+                loc3 = Kalman(temp3)
+                temp=[]
+                temp.append(loc1)
+                temp.append(loc2)
+                temp.append(loc3)
+                loc = [[int(i[0]) for i in temp],[int(i[1]) for i in temp]]
+                self.signal.emit(loc)
+                temp1 = []
+                temp2 = []
+                temp3 = []
+                count = 0
+            else:
+                temp1.append(knn1[0])
+                temp1.append(multi1)
+                temp2.append(knn2[0])
+                temp2.append(multi2)
+                temp3.append(knn3[0])
+                temp3.append(multi3)
+                count += 1
             ## upl to dashboard
-            # if (datetime.timestamp(datetime.now()) - time > 60): ## upload mobiles nodes location every minute
-            #     ## uplaod loc to dashboard
-            #     data = [{
-            #         'variable':'Mobile 1',
-            #         'value': loc1
-            #     },{
-            #         'variable':'Mobile 2',
-            #         'value': loc2
-            #     },{
-            #         'variable':'Mobile 3',
-            #         'value': loc3
-            #     }]
-            #     my_device.insert(data)
-            #     time = datetime.timestamp(datetime.now())
+            if (datetime.timestamp(datetime.now()) - timestamp > 60): ## upload mobiles nodes location every minute
+                ## uplaod loc to dashboard
+                data = [{
+                    'variable':'Mobile1',
+                    'value': loc1
+                },{
+                    'variable':'Mobile2',
+                    'value': loc2
+                },{
+                    'variable':'Mobile3',
+                    'value': loc3
+                }]
+                result = my_device.insert(data)
+                timestamp = datetime.timestamp(datetime.now())
+                if result['status']:
+                    print(result['result'])
+                else:
+                    print(result['message'])
             time.sleep(0.1) 
 
 class Ui_MainWindow(object):
@@ -238,11 +261,11 @@ class Ui_MainWindow(object):
         self.label1.setObjectName("label1")
         self.label1.setStyleSheet("background-color:red")
         self.label2 = QtWidgets.QLabel(self.centralwidget)
-        self.label2.setGeometry(QtCore.QRect(160, 480, 47, 13))
+        self.label2.setGeometry(QtCore.QRect(160, 480, 71, 13))
         self.label2.setObjectName("label2")
         self.label2.setStyleSheet("background-color:green")
         self.label3 = QtWidgets.QLabel(self.centralwidget)
-        self.label3.setGeometry(QtCore.QRect(160, 500, 47, 13))
+        self.label3.setGeometry(QtCore.QRect(160, 500, 71, 13))
         self.label3.setObjectName("label3")
         self.label3.setStyleSheet("background-color:blue")
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
@@ -277,44 +300,46 @@ class Ui_MainWindow(object):
     def gui_update(self, result):
         x_data = result[0]
         y_data = result[1]
+        
         scatter = pg.ScatterPlotItem(x_data, y_data,
             size=10, brush=[pg.mkBrush(c) for c in "rgb"])
         self.graphicsView.clear()
         self.graphicsView.addItem(scatter)
         self.graphicsView.setXRange(0,18, padding=0)
         self.graphicsView.setYRange(0,12, padding=0)
+        # coordinates = [x_data,y_data]
         coordinates = [[int(i[0]) for i in result],[int(i[1]) for i in result],[int(i[2]) for i in result]]
         ## Room display
         count = 0
         while count < 3:
-            if coordinates[0] > 3 and coordinates[0] < 7 and coordinates[1] > 9 and coordinates[1] < 11:
+            if coordinates[count][0] > 3 and coordinates[count][0] < 7 and coordinates[count][1] > 7 and coordinates[count][1] < 11:
                 if count == 0:
-                    self.label1.selectedText('Room1')
+                    self.label1.setText('Room1')
                 elif count == 1:
-                    self.label2.selectedText('Room1')
+                    self.label2.setText('Room1')
                 elif count == 2:
-                    self.label3.selectedText('Room1')  
-            elif coordinates[0] > 13 and coordinates[0] < 18.4 and coordinates[1] > 7.6 and coordinates[1] < 11:
+                    self.label3.setText('Room1')  
+            elif coordinates[count][0] > 12 and coordinates[count][0] < 18.4 and coordinates[count][1] > 7 and coordinates[count][1] < 11:
                 if count == 0:
-                    self.label1.selectedText('Room2')
+                    self.label1.setText('Room2')
                 elif count == 1:
-                    self.label2.selectedText('Room2')
+                    self.label2.setText('Room2')
                 elif count == 2:
-                    self.label3.selectedText('Room2')
-            elif coordinates[1] > 11:
+                    self.label3.setText('Room2')
+            elif coordinates[count][1] > 11:
                 if count == 0:
-                    self.label1.selectedText('Corridor')
+                    self.label1.setText('Corridor')
                 elif count == 1:
-                    self.label2.selectedText('Corridor')
+                    self.label2.setText('Corridor')
                 elif count == 2:
-                    self.label3.selectedText('Corridor')
+                    self.label3.setText('Corridor')
             else:
                 if count == 0:
-                    self.label1.selectedText('Open space')
+                    self.label1.setText('Open space')
                 elif count == 1:
-                    self.label2.selectedText('Open space')
+                    self.label2.setText('Open space')
                 elif count == 2:
-                    self.label3.selectedText('Open space')
+                    self.label3.setText('Open space')
             count += 1     
                     
 if __name__ == "__main__":
