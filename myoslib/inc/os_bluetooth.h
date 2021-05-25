@@ -9,9 +9,13 @@
 #define DEVICE_NAME_LEN         (sizeof(DEVICE_NAME) - 1)
 
 #define NUM_STATIC_NODES        13
+#define NUM_MOBILE_NODES        3
+#define NUM_HOUSEHOLDS          1
 #define PAYLOAD_SIZE            16
 #define PAYLOAD_BUFFER_OFFSET   13
 #define NODE_QUEUE_ALIGNMENT    32
+#define MAX_RESIDENTS           100
+#define MAX_HOUSEHOLDS          255
 
 #define BT_QUEUE_LENGTH         32
 #define BT_THREAD_STACK_SIZE    500
