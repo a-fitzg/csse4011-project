@@ -29,6 +29,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from pykalman import KalmanFilter
 from scipy.optimize import minimize
 from datetime import datetime
+import tago
 
 mobile1_R = None
 mobile1_U = None
@@ -171,6 +172,8 @@ class Worker(QThread):
         stations = list(np.array([[17.8,7.8], [2.4,7.8], [5.85,3.0], [11.95,0.1],[6.55,0.1],[12.75,3.0],[9.45,12.75],[14.2,10],[5.5,10],[12.55,9.2],[8.65,9.2],[15.05,4.8],[6.95,4.8]]))
         time = datetime.now()
         timestamp = datetime.timestamp(time)
+        MY_DEVICE_TOKEN = '3503290b-05e5-433d-a864-e1b8e7bfbf11'
+        my_device = tago.Device(MY_DEVICE_TOKEN)
         while True:
             ## feed rssi to modal
             m1  = mobile1_R
@@ -204,12 +207,22 @@ class Worker(QThread):
             temp.append(loc3)
             loc = [[int(i[0]) for i in temp],[int(i[1]) for i in temp]]
             self.signal.emit(loc)
-            ##  
             ## upl to dashboard
-            if (time - datetime.timestamp(datetime.now()) > 60):
-                ## uplaod loc to dashboard
-                pass
-            time.sleep(0.2)
+            # if (datetime.timestamp(datetime.now()) - time > 60): ## upload mobiles nodes location every minute
+            #     ## uplaod loc to dashboard
+            #     data = [{
+            #         'variable':'Mobile 1',
+            #         'value': loc1
+            #     },{
+            #         'variable':'Mobile 2',
+            #         'value': loc2
+            #     },{
+            #         'variable':'Mobile 3',
+            #         'value': loc3
+            #     }]
+            #     my_device.insert(data)
+            #     time = datetime.timestamp(datetime.now())
+            time.sleep(0.1) 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -223,12 +236,15 @@ class Ui_MainWindow(object):
         self.label1 = QtWidgets.QLabel(self.centralwidget)
         self.label1.setGeometry(QtCore.QRect(160, 460, 71, 16))
         self.label1.setObjectName("label1")
+        self.label1.setStyleSheet("background-color:red")
         self.label2 = QtWidgets.QLabel(self.centralwidget)
         self.label2.setGeometry(QtCore.QRect(160, 480, 47, 13))
         self.label2.setObjectName("label2")
+        self.label2.setStyleSheet("background-color:green")
         self.label3 = QtWidgets.QLabel(self.centralwidget)
         self.label3.setGeometry(QtCore.QRect(160, 500, 47, 13))
         self.label3.setObjectName("label3")
+        self.label3.setStyleSheet("background-color:blue")
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
         self.listWidget.setGeometry(QtCore.QRect(620, 10, 141, 441))
         self.listWidget.setObjectName("listWidget")
