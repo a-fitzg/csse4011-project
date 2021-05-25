@@ -27,6 +27,29 @@
 uint8_t violatingDistance = false;
 const struct device* thingyLed;
 
+
+// Bluetooth addresses for mobile nodes:
+bt_addr_t mobileNodes[NUM_MOBILE_NODES] = {
+        {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}}, 
+        {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}}, 
+        {.val = {0x1A, 0xDA, 0x64, 0xAA, 0x6C, 0xDC}}};
+
+#define MOBILE_MOBILE
+
+#if defined(MOBILE_MOBILE)
+bt_addr_t ownAddress = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}};
+#elif defined(MOBILE_STATIC2)
+bt_addr_t ownAddress = {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}};
+#elif defined(MOBILE_DONGLE)
+bt_addr_t ownAddress = {.val = {0x1A, 0xDA, 0x64, 0xAA, 0x6C, 0xDC}};
+#endif
+
+// List of residents of this home
+bt_addr_t householdAddresses[2] = {
+        {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}},                      
+        {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}}};
+
+
 // Initial advertising data for static nodes (overriden as soon as static node
 // enters cyclic executive)
 static const struct bt_data staticAdData[] = {
@@ -418,6 +441,43 @@ void bt_mobileCallback(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
             k_msgq_purge(&os_QueueBtNodeMessage);
         }
     }
+
+    // ----- Listen for messages from other mobile nodes -----
+    else if (addressesEqual(addr->a, mobileNodes[0]) ||
+             addressesEqual(addr->a, mobileNodes[1]) || 
+             addressesEqual(addr->a, mobileNodes[2])) {
+
+        uint8_t isResident = false;
+        uint8_t isCoresident = false;
+
+        for (uint16_t i = 0; i < 2; i++) {
+
+            if (addressesEqual(householdAddresses[i], ownAddress)) {
+
+                isResident = true;
+                break;
+            }
+        }
+
+        for (uint16_t i = 0; i < 2; i++) {
+
+            if (addressesEqual(householdAddresses[i], addr->a)) {
+
+                isCoresident = true;
+                break;
+            }
+        }
+
+        uint8_t housePartner = isResident && isCoresident;
+
+        if (housePartner || rssi < -60) {
+            violatingDistance = false;
+            return;
+        }
+        violatingDistance = true;
+
+    }
+
 
 /*
     // Listen for messages from node 5

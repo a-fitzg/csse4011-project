@@ -29,8 +29,16 @@
 
 #include <os_bluetooth.h>
 
+#define FILTER_MOBILE
+//#define FILTER_STATIC2
+#define FILTER_DONGLE
+
+
 // Bluetooth address of mobile node
-bt_addr_t mobileAddrPrimary = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}};
+bt_addr_t mobileAddrMobile  = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}};
+bt_addr_t mobileAddrStatic2 = {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}};
+bt_addr_t mobileAddrDongle  = {.val = {0x1A, 0xDA, 0x64, 0xAA, 0x6C, 0xDC}};
+
 //bt_addr_t mobileAddrSecondary = {.val = {0xB7, 0x14, 0x80, 0xB8, 0xB9, 0xEF}};
 
 /**
@@ -43,7 +51,8 @@ bt_addr_t mobileAddrPrimary = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}};
 static void staticCallback(const bt_addr_le_t* addr, int8_t rssi, 
         uint8_t adv_type, struct net_buf_simple* buf) {
 
-    if (addressesEqual(addr->a, mobileAddrPrimary)) {
+#ifdef FILTER_MOBILE
+    if (addressesEqual(addr->a, mobileAddrMobile)) {
 
         // We have a message from our mobile node...
         int8_t payload[PAYLOAD_SIZE];
@@ -61,6 +70,48 @@ static void staticCallback(const bt_addr_le_t* addr, int8_t rssi,
                 payload[12],  payload[13],  payload[14],  0x00);
         printf("%s", message);
     }
+#endif
+#ifdef FILTER_STATIC2
+    if (addressesEqual(addr->a, mobileAddrStatic2)) {
+
+        // We have a message from our mobile node...
+        int8_t payload[PAYLOAD_SIZE];
+        for (uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
+
+            payload[i] = buf->data[i + PAYLOAD_BUFFER_OFFSET];
+        }
+
+        // Make a message with the packet information, then send it over UART
+        char message[80];
+        sprintf(message, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
+                payload[0],   payload[1],   payload[2],   payload[3], 
+                payload[4],   payload[5],   payload[6],   payload[7],
+                payload[8],   payload[9],   payload[10],  payload[11],
+                payload[12],  payload[13],  payload[14],  0x01);
+        printf("%s", message);
+    }
+#endif
+#ifdef FILTER_DONGLE
+    if (addressesEqual(addr->a, mobileAddrDongle)) {
+
+        // We have a message from our mobile node...
+        int8_t payload[PAYLOAD_SIZE];
+        for (uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
+
+            payload[i] = buf->data[i + PAYLOAD_BUFFER_OFFSET];
+        }
+
+        // Make a message with the packet information, then send it over UART
+        char message[80];
+        sprintf(message, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
+                payload[0],   payload[1],   payload[2],   payload[3], 
+                payload[4],   payload[5],   payload[6],   payload[7],
+                payload[8],   payload[9],   payload[10],  payload[11],
+                payload[12],  payload[13],  payload[14],  0x02);
+        printf("%s", message);
+    }
+#endif
+
 /*
     if (addressesEqual(addr->a, mobileAddrSecondary)) {
 
