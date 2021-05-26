@@ -10,6 +10,7 @@
 
 #define NUM_STATIC_NODES        13
 #define NUM_MOBILE_NODES        3
+#define NUN_ULTRASONIC_NODES    2
 #define NUM_HOUSEHOLDS          1
 #define PAYLOAD_SIZE            16
 #define PAYLOAD_BUFFER_OFFSET   13
