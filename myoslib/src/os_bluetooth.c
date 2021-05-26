@@ -198,9 +198,9 @@ void bt_mobileCallback(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 
             uint8_t payload[PAYLOAD_SIZE];                                          
             // Make up the payload array                                            
-            for (uint8_t i = 0; i < PAYLOAD_SIZE; i++) {                            
+            for (uint8_t j = 0; j < PAYLOAD_SIZE; j++) {                            
                                                                                 
-                payload[i] = buf->data[i + PAYLOAD_BUFFER_OFFSET];                  
+                payload[j] = buf->data[j + PAYLOAD_BUFFER_OFFSET];                  
             }                                                                       
                                                                                 
             // Make up the message item to send to listening thread                 
