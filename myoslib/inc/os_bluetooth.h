@@ -14,8 +14,8 @@
 #define PAYLOAD_SIZE            16
 #define PAYLOAD_BUFFER_OFFSET   13
 #define NODE_QUEUE_ALIGNMENT    32
-#define MAX_RESIDENTS           100
-#define MAX_HOUSEHOLDS          255
+#define MAX_RESIDENTS           10
+#define MAX_HOUSEHOLDS          10
 
 #define BT_QUEUE_LENGTH         32
 #define BT_THREAD_STACK_SIZE    500
@@ -69,6 +69,13 @@ typedef struct {
     int8_t      rssi;
     uint8_t     payload[PAYLOAD_SIZE];
 } NodeQueueItem;
+
+// Households that have residents
+typedef struct {
+    uint8_t     index;
+    uint8_t     numResidents;
+    bt_addr_t   addresses[MAX_RESIDENTS];
+} Household;
 
 // Mutex for accessing list of node properties
 extern struct k_mutex os_MutexNodeList;

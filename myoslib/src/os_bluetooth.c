@@ -27,12 +27,16 @@
 uint8_t violatingDistance = false;
 const struct device* thingyLed;
 
+bt_addr_le_t selfAddr = {0};
+
 
 // Bluetooth addresses for mobile nodes:
 bt_addr_t mobileNodes[NUM_MOBILE_NODES] = {
         {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}}, 
         {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}}, 
         {.val = {0x1A, 0xDA, 0x64, 0xAA, 0x6C, 0xDC}}};
+
+#ifdef LEGACY_FAMILY_MEMBERS
 
 #define MOBILE_MOBILE
 
@@ -42,12 +46,19 @@ bt_addr_t ownAddress = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}};
 bt_addr_t ownAddress = {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}};
 #elif defined(MOBILE_DONGLE)
 bt_addr_t ownAddress = {.val = {0x1A, 0xDA, 0x64, 0xAA, 0x6C, 0xDC}};
-#endif
+#endif  // MOBILE_{MOBILE/STATIC2/DONGLE}
 
 // List of residents of this home
 bt_addr_t householdAddresses[2] = {
         {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}},                      
         {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}}};
+
+#else
+
+Household householdList[MAX_HOUSEHOLDS];
+uint16_t numHouseholds = 0;
+
+#endif  // LEGACY_FAMILY_MEMBERS
 
 
 // Initial advertising data for static nodes (overriden as soon as static node
@@ -449,7 +460,7 @@ void bt_mobileCallback(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 
         uint8_t isResident = false;
         uint8_t isCoresident = false;
-
+#ifdef LEGACY_FAMILY_MEMBERS
         for (uint16_t i = 0; i < 2; i++) {
 
             if (addressesEqual(householdAddresses[i], ownAddress)) {
@@ -468,6 +479,39 @@ void bt_mobileCallback(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
             }
         }
 
+#else
+        int32_t ourHouse = -1;
+        // Iterate through and find the house we live at
+        for (uint16_t i = 0; i < numHouseholds; i++) {
+
+            for (uint16_t j = 0; j < householdList[i].numResidents; j++) {
+
+                if (addressesEqual(householdList[i].addresses[j], selfAddr.a)) {
+
+                    ourHouse = i;
+                    isResident = true;
+                    break;
+                }
+            }
+        }
+        if (ourHouse != -1) {
+            
+            // We live in a house (that is registered), now find if other lives
+            // in our house as well (iterate over residents)
+            for (uint16_t j = 0; j < householdList[ourHouse].numResidents; 
+                    j++) {
+
+                if (addressesEqual(householdList[ourHouse].addresses[j], 
+                        addr->a)) {
+
+                    isCoresident = true;
+                    break;
+                }
+            }
+        }
+
+
+#endif // LEGACY_FAMILY_MEMBERS
         uint8_t housePartner = isResident && isCoresident;
 
         if (housePartner || rssi < -60) {
@@ -477,141 +521,6 @@ void bt_mobileCallback(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
         violatingDistance = true;
 
     }
-
-
-/*
-    // Listen for messages from node 5
-    if (addressesEqual(addr->a, nodeList[4].node.address)) {
-
-        uint8_t payload[PAYLOAD_SIZE];
-        // Make up the payload array
-        for (uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
-
-            payload[i] = buf->data[i + PAYLOAD_BUFFER_OFFSET];
-        }
-        
-        // Make up the message item to send to listening thread
-        NodeQueueItem nodeQueueItem;
-        nodeQueueItem.index = 4;
-        nodeQueueItem.rssi = rssi;
-        payload[0] = 0;
-        payload[1] = buf->data[PAYLOAD_BUFFER_OFFSET - 1];
-        memcpy(&nodeQueueItem.payload, &payload, sizeof(payload));
-        
-
-        // Send off message to listening thread
-        while (k_msgq_put(&os_QueueBtNodeMessage, &nodeQueueItem, K_NO_WAIT) 
-                != 0) {
-
-            k_msgq_purge(&os_QueueBtNodeMessage);
-        }
-    }
-
-    // Listen for messages from node 6
-    else if (addressesEqual(addr->a, nodeList[5].node.address)) {
-
-        uint8_t payload[PAYLOAD_SIZE];
-        // Make up the payload array
-        for (uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
-
-            payload[i] = buf->data[i + PAYLOAD_BUFFER_OFFSET];
-        }
-        
-        // Make up the message item to send to listening thread
-        NodeQueueItem nodeQueueItem;
-        nodeQueueItem.index = 5;
-        nodeQueueItem.rssi = rssi;
-        payload[0] = 0;
-        payload[1] = buf->data[PAYLOAD_BUFFER_OFFSET - 1];
-        memcpy(&nodeQueueItem.payload, &payload, sizeof(payload));
-
-        // Send off message to listening thread
-        while (k_msgq_put(&os_QueueBtNodeMessage, &nodeQueueItem, K_NO_WAIT) 
-                != 0) {
-
-            k_msgq_purge(&os_QueueBtNodeMessage);
-        }
-    }
-
-    
-    // ------------------------------------------------------------------------
-    //                      Last 2 nodes are mobile nodes
-
-
-    // Listen for messages from node 7
-    else if (addressesEqual(addr->a, nodeList[6].node.address)) {
-
-        uint8_t payload[PAYLOAD_SIZE];
-        // Make up the payload array
-        for (uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
-
-            payload[i] = buf->data[i + PAYLOAD_BUFFER_OFFSET];
-        }
-        
-        // Make up the message item to send to listening thread
-        NodeQueueItem nodeQueueItem;
-        nodeQueueItem.index = 6;
-        nodeQueueItem.rssi = rssi;
-        payload[0] = 0;
-        payload[1] = buf->data[PAYLOAD_BUFFER_OFFSET - 1];
-        memcpy(&nodeQueueItem.payload, &payload, sizeof(payload));
-
-        // Send off message to listening thread
-        while (k_msgq_put(&os_QueueBtNodeMessage, &nodeQueueItem, K_NO_WAIT) 
-                != 0) {
-
-            k_msgq_purge(&os_QueueBtNodeMessage);
-        }
-
-        if (rssi > -60) {
-
-            // Social distancing alert!
-            violatingDistance = true;
-        } else {
-
-            violatingDistance = false;
-        }
-
-    }
-
-    // Listen for messages from node 8
-    else if (addressesEqual(addr->a, nodeList[7].node.address)) {
-
-        uint8_t payload[PAYLOAD_SIZE];
-        // Make up the payload array
-        for (uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
-
-            payload[i] = buf->data[i + PAYLOAD_BUFFER_OFFSET];
-        }
-        
-        // Make up the message item to send to listening thread
-        NodeQueueItem nodeQueueItem;
-        nodeQueueItem.index = 7;
-        nodeQueueItem.rssi = rssi;
-        payload[0] = 0;
-        payload[1] = buf->data[PAYLOAD_BUFFER_OFFSET - 1];
-        memcpy(&nodeQueueItem.payload, &payload, sizeof(payload));
-
-        // Send off message to listening thread
-        while (k_msgq_put(&os_QueueBtNodeMessage, &nodeQueueItem, K_NO_WAIT) 
-                != 0) {
-
-            k_msgq_purge(&os_QueueBtNodeMessage);
-        }
-
-        if (rssi > -60) {
-
-            // Social distancing alert!
-            violatingDistance = true;
-        } else {
-
-            violatingDistance = false;
-        }
-    }
-
-*/
-
-
 }
 
 /**
@@ -676,6 +585,19 @@ void os_bluetooth_mobileBeaconInit(int err) {
 
     bt_id_get(&addr, &count);
     bt_addr_le_to_str(&addr, addr_s, sizeof(addr_s));
+
+#ifndef LEGACY_FAMILY_MEMBERS
+    memcpy(&selfAddr, &addr, sizeof(addr));
+
+
+    // Set up some initial households
+    Household initialHousehold = {.index = 0, .numResidents = 2, 
+            .addresses[0] = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}},
+            .addresses[1] = {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}}};
+    householdList[0] = initialHousehold;
+    numHouseholds = 1;
+
+#endif  // LEGACY_FAMILY_MEMBERS
 
     printk("Beacon started, advertising as %s\n", addr_s);
 
