@@ -38,8 +38,9 @@ mobile2_U = None
 mobile3_R = None
 mobile3_U = None
 
+## BT RSSI callback (async)
 def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
-    
+    ## Add mobile node devices here
     if device.address == "E1:38:D4:CD:DE:AF" and advertisement_data.service_data:
         global mobile1_R
         global mobile1_U
@@ -77,6 +78,7 @@ def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
 def get_trainingmodel():
         X_train = []
         Y_train = []
+        ## add training data here
         wb = load_workbook(filename=r'C:\Users\desmo\csse4011\csse4011-project\apps\trainingset.xlsx')
         sheet = wb.active
 
@@ -111,11 +113,6 @@ def Kalman(raw_data):
         (smoothed_state_means, smoothed_state_covariances) = kf1.smooth(measurements)
         x = smoothed_state_means[:, 0]
         y = smoothed_state_means[:, 2]
-        # mean_x = mean(x)
-        # mean_y = mean(y)
-        # print(mean_x)
-        # print(mean_y)
-        # print(smoothed_state_means)
         mean_x = (sum(x)) / len(x)
         mean_y = (sum(y)) / len(y)
         return [mean_x, mean_y]
@@ -128,6 +125,7 @@ def rssi_dist_convert(rssi, ntype):
             dist = 10 ** ((-72 - rssi) / 20)
             return dist 
 
+## Mulitilateration
 def gps_solve(distances_to_station, stations_coordinates):
     def error(x, c, r):
         return sum([(np.linalg.norm(x - c[i]) - r[i]) ** 2 for i in range(len(c))])
@@ -141,7 +139,7 @@ def gps_solve(distances_to_station, stations_coordinates):
     # optimize distance from signal origin to border of spheres
     return minimize(error, x0, args=(stations_coordinates, distances_to_station), method='Nelder-Mead').x
 
-
+## BT RSSI scanner thread
 class RSSI(QThread):
     signal  = pyqtSignal('PyQt_PyObject')
 
@@ -161,6 +159,7 @@ class RSSI(QThread):
     def work(self):
         asyncio.ensure_future(self.run(), loop=self.loop)
 
+## Data processing thread
 class Worker(QThread):
     signal = pyqtSignal('PyQt_PyObject')
 
@@ -169,10 +168,11 @@ class Worker(QThread):
 
     def run(self):
         model = get_trainingmodel()
+        ## Static nodes locations 
         stations = list(np.array([[17.8,7.8], [2.4,7.8], [5.85,3.0], [11.95,0.1],[6.55,0.1],[12.75,3.0],[9.45,12.75],[14.2,10],[5.5,10],[12.55,9.2],[8.65,9.2],[15.05,4.8],[6.95,4.8]]))
         time1 = datetime.now()
         timestamp = datetime.timestamp(time1)
-        MY_DEVICE_TOKEN = '3503290b-05e5-433d-a864-e1b8e7bfbf11'
+        MY_DEVICE_TOKEN = '3503290b-05e5-433d-a864-e1b8e7bfbf11' ## Add tagoio dashboard api key here
         my_device = tago.Device(MY_DEVICE_TOKEN)
         temp1 = []
         temp2 = []
@@ -183,12 +183,11 @@ class Worker(QThread):
             m1  = mobile1_R
             m2  = mobile2_R
             m3  = mobile3_R
-            # print(mobile1_R)
             knn1 = model.predict([m1])
             knn2 = model.predict([m2])
             knn3 = model.predict([m3])
             ## get distance from rssi value
-            min_list1 = sorted(zip(stations,m1), key=lambda t: t[1])[7:]
+            min_list1 = sorted(zip(stations,m1), key=lambda t: t[1])[7:] ## get the best 6 rssi signal strength
             dist1 = [rssi_dist_convert(i[1],0) for i in min_list1]
             nodes1 = [i[0] for i in min_list1]
             min_list2 = sorted(zip(stations,m2), key=lambda t: t[1])[7:]
@@ -202,9 +201,7 @@ class Worker(QThread):
             multi2 = gps_solve(dist2, nodes2)
             multi3 = gps_solve(dist3, nodes3)
             ## kalman filter
-            # print(knn1)
-            # print(multi1)
-            if count > 5:
+            if count > 5: ## takes 10 readings of knn and multilateration coordinates and perform Kalman filter
                 loc1 = Kalman(temp1)
                 loc2 = Kalman(temp2)
                 loc3 = Kalman(temp3)
@@ -226,7 +223,7 @@ class Worker(QThread):
                 temp3.append(knn3[0])
                 temp3.append(multi3)
                 count += 1
-            ## upl to dashboard
+
             if (datetime.timestamp(datetime.now()) - timestamp > 60): ## upload mobiles nodes location every minute
                 ## uplaod loc to dashboard
                 data = [{
