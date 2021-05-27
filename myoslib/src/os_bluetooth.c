@@ -29,8 +29,11 @@ const struct device* thingyLed;
 
 bt_addr_le_t selfAddr = {0};
 
+// NOTE: To add family members of nodes, do this in os_bluetoothMobileListen()
 
 // Bluetooth addresses for mobile nodes:
+// INSERT BLUETOOTH ADDRESSES OF ALL MOBILE NODES (IN REVERSE ORDER AS THEY 
+// APPEAR IN NETWORK SCAN)
 bt_addr_t mobileNodes[NUM_MOBILE_NODES] = {
         {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}}, 
         {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}}, 
@@ -38,6 +41,7 @@ bt_addr_t mobileNodes[NUM_MOBILE_NODES] = {
 
 #ifdef LEGACY_FAMILY_MEMBERS
 
+// ----- LEGACY - DO NOT USE -----
 #define MOBILE_MOBILE
 
 #if defined(MOBILE_MOBILE)
@@ -353,14 +357,20 @@ void os_bluetooth_mobileBeaconInit(int err) {
     bt_addr_le_to_str(&addr, addr_s, sizeof(addr_s));
 
 #ifndef LEGACY_FAMILY_MEMBERS
+    // Copy our bluetooth address to global
     memcpy(&selfAddr, &addr, sizeof(addr));
 
-
     // Set up some initial households
+    // *** To add a new household with members, make a new Household struct ***
+    // *** with addresses for all of the house/apartment residents          ***
     Household initialHousehold = {.index = 0, .numResidents = 2, 
             .addresses[0] = {.val = {0xAF, 0xDE, 0xCD, 0xD4, 0x38, 0xE1}},
             .addresses[1] = {.val = {0x4D, 0x5F, 0x62, 0xD7, 0x95, 0xCF}}};
+
+    // Add that household to the householdList array
     householdList[0] = initialHousehold;
+
+    // Then specify the number of households you have
     numHouseholds = 1;
 
 #endif  // LEGACY_FAMILY_MEMBERS
